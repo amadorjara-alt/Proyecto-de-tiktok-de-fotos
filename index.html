@@ -3,41 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Lumina - Photo Social</title>
+  <title>Lumina - Media Social</title>
 
-  <!-- Iconos de FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- SDK Supabase v2 (Cargado en el HEAD para garantizar disponibilidad) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- Hoja de Estilos -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Barra Superior -->
+  <!-- Top Bar -->
   <header class="top-bar">
     <div class="logo"><i class="fa-solid fa-bolt"></i> Lumina</div>
     <div class="top-tabs">
       <span class="active">Para ti</span>
-      <span>Siguiendo</span>
     </div>
-    <div class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
   </header>
 
-  <!-- Feed Principal de Fotos -->
+  <!-- Feed Principal -->
   <main id="feed"></main>
 
-  <!-- Botón Flotante Central (+) para la Cámara -->
+  <!-- Botón Flotante (+) para Subir Multimedia -->
   <div class="upload-wrapper">
     <label for="file-input" class="upload-btn">
       <i class="fa-solid fa-plus"></i>
     </label>
-    <input type="file" id="file-input" accept="image/*" capture="environment">
+    <!-- Se remueve 'capture' para permitir elegir entre Cámara o Galería -->
+    <input type="file" id="file-input" accept="image/*,video/*">
   </div>
 
-  <!-- Modal / Vista Previa de la Foto -->
+  <!-- Modal de Creación / Vista Previa -->
   <div id="preview-modal" class="modal">
     <div class="modal-card">
       <div class="modal-header">
@@ -46,11 +40,11 @@
         <button id="publish-btn" class="btn-primary">Publicar</button>
       </div>
 
-      <div class="preview-area">
-        <img id="preview-img" src="" alt="Vista previa">
+      <div class="preview-area" id="preview-container">
+        <!-- Se inserta dinámicamente <img> o <video> -->
       </div>
 
-      <!-- Filtros -->
+      <!-- Selección de Filtro -->
       <div class="filter-selector">
         <span class="filter-tag active" data-filter="normal">Normal</span>
         <span class="filter-tag" data-filter="vintage">Vintage</span>
@@ -60,12 +54,32 @@
 
       <div class="input-group">
         <i class="fa-solid fa-pen"></i>
-        <input type="text" id="caption-input" placeholder="Escribe un pie de foto creativo..." maxlength="150">
+        <input type="text" id="caption-input" placeholder="Escribe un pie de foto o video..." maxlength="150">
+      </div>
+
+      <!-- Selector Opcional de Música -->
+      <div class="input-group audio-input-group">
+        <i class="fa-solid fa-music"></i>
+        <input type="file" id="audio-input" accept="audio/*">
       </div>
     </div>
   </div>
 
-  <!-- Código JavaScript principal -->
+  <!-- Modal / Drawer de Comentarios -->
+  <div id="comments-modal" class="modal">
+    <div class="modal-card comments-card">
+      <div class="modal-header">
+        <h3>Comentarios</h3>
+        <button id="close-comments-btn" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="comments-list" class="comments-list"></div>
+      <div class="comment-input-area">
+        <input type="text" id="new-comment-input" placeholder="Añadir comentario...">
+        <button id="send-comment-btn" class="btn-primary"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
