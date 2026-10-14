@@ -14,7 +14,7 @@ const cancelBtn = document.getElementById('cancel-btn');
 const publishBtn = document.getElementById('publish-btn');
 const filterTags = document.querySelectorAll('.filter-tag');
 
-// Elementos Modal Comentarios
+// Elementos Comentarios
 const commentsModal = document.getElementById('comments-modal');
 const commentsList = document.getElementById('comments-list');
 const closeCommentsBtn = document.getElementById('close-comments-btn');
@@ -41,11 +41,11 @@ async function loadPosts() {
       data.forEach(post => renderPost(post));
     }
   } catch (err) {
-    console.error('Error cargando posts:', err);
+    console.error('Error al cargar publicaciones:', err);
   }
 }
 
-// 2. RENDERIZAR PUBLICACIÓN (FOTO O VIDEO)
+// 2. RENDERIZAR TARJETA INDIVIDUAL (FOTO O VIDEO)
 function renderPost(post) {
   const postEl = document.createElement('div');
   postEl.className = 'post';
@@ -59,13 +59,16 @@ function renderPost(post) {
     ? `<audio class="post-audio" src="${post.audio_url}" loop></audio>` 
     : '';
 
+  const username = post.username || '@creador_' + Math.floor(Math.random() * 90 + 10);
+
   postEl.innerHTML = `
     ${mediaHtml}
     ${audioHtml}
 
     <div class="post-overlay">
       <div class="user-info">
-        <span class="username">${post.username || '@anonimo'}</span>
+        <img class="avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=${username}" alt="Avatar">
+        <span class="username">${username}</span>
       </div>
       <p class="caption">${post.caption || ''}</p>
       ${post.audio_title ? `<p class="audio-info"><i class="fa-solid fa-music"></i> \${post.audio_title}</p>` : ''}
@@ -86,13 +89,20 @@ function renderPost(post) {
         <div class="action-count count-comments">0</div>
       </div>
 
+      <div>
+        <button class="action-btn share-btn">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+        <div class="action-count">Compartir</div>
+      </div>
+
       <div class="vinyl-disc ${post.audio_url ? 'spinning' : ''}">
-        <i class="fa-solid fa-music"></i>
+        <i class="fa-solid fa-compact-disc"></i>
       </div>
     </div>
   `;
 
-  // Autoplay / Audio al hacer click o scroll
+  // Reproducción táctil para video y audio
   const mediaEl = postEl.querySelector('.post-media');
   const audioElement = postEl.querySelector('.post-audio');
 
@@ -105,7 +115,7 @@ function renderPost(post) {
     }
   });
 
-  // Contador real de Me Gusta en Supabase
+  // Me gusta persistente en Supabase
   const likeBtn = postEl.querySelector('.like-btn');
   const countLikes = postEl.querySelector('.count-likes');
   let isLiked = false;
@@ -119,14 +129,13 @@ function renderPost(post) {
     const newCount = isLiked ? current + 1 : Math.max(0, current - 1);
     countLikes.textContent = newCount;
 
-    // Actualizar en base de datos
     await supabaseClient
       .from('posts')
       .update({ likes_count: newCount })
       .eq('id', post.id);
   });
 
-  // Cargar contador de comentarios y abrir modal
+  // Cargar comentarios
   const commentBtn = postEl.querySelector('.comment-btn');
   const countComments = postEl.querySelector('.count-comments');
 
@@ -140,7 +149,7 @@ function renderPost(post) {
   feed.appendChild(postEl);
 }
 
-// 3. GESTIÓN DE COMENTARIOS REALES
+// 3. GESTIÓN DE COMENTARIOS
 async function loadCommentCount(postId, element) {
   const { count } = await supabaseClient
     .from('comments')
@@ -153,7 +162,7 @@ async function loadCommentCount(postId, element) {
 async function openCommentsModal(postId) {
   activePostForComments = postId;
   commentsModal.classList.add('active');
-  commentsList.innerHTML = 'Cargando comentarios...';
+  commentsList.innerHTML = '<p class="no-comments">Cargando comentarios...</p>';
 
   const { data } = await supabaseClient
     .from('comments')
@@ -184,7 +193,7 @@ sendCommentBtn.addEventListener('click', async () => {
 
   newCommentInput.value = '';
   openCommentsModal(activePostForComments);
-  loadPosts(); // Refrescar conteos
+  loadPosts();
 });
 
 closeCommentsBtn.addEventListener('click', () => {
@@ -192,7 +201,7 @@ closeCommentsBtn.addEventListener('click', () => {
   activePostForComments = null;
 });
 
-// 4. PREVISUALIZAR IMAGEN / VIDEO SELECCIONADO
+// 4. PREVISUALIZACIÓN MULTIMEDIA (FOTO/VIDEO DE LA GALERÍA O CÁMARA)
 fileInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -238,7 +247,7 @@ cancelBtn.addEventListener('click', () => {
   selectedAudioFile = null;
 });
 
-// 5. SUBIR FOTO/VIDEO + MÚSICA A SUPABASE
+// 5. PUBLICAR MULTIMEDIA Y MÚSICA EN SUPABASE
 publishBtn.addEventListener('click', async () => {
   if (!selectedFile || !supabaseClient) return;
 
@@ -250,7 +259,7 @@ publishBtn.addEventListener('click', async () => {
     const mediaExt = selectedFile.name.split('.').pop();
     const mediaName = `${Date.now()}_media.${mediaExt}`;
 
-    // 1. Subir Foto/Video a bucket 'fotos'
+    // Subir a Storage Bucket 'fotos'
     const { error: mediaError } = await supabaseClient.storage
       .from('fotos')
       .upload(mediaName, selectedFile);
@@ -261,7 +270,7 @@ publishBtn.addEventListener('click', async () => {
       .from('fotos')
       .getPublicUrl(mediaName);
 
-    // 2. Subir Audio opcional a bucket 'audio'
+    // Subir Audio Opcional
     let audioPublicUrl = null;
     if (selectedAudioFile) {
       const audioExt = selectedAudioFile.name.split('.').pop();
@@ -279,7 +288,7 @@ publishBtn.addEventListener('click', async () => {
       }
     }
 
-    // 3. Guardar registro en Supabase
+    // Insertar fila en tabla 'posts'
     const { error: dbError } = await supabaseClient.from('posts').insert([
       {
         image_url: mediaUrlData.publicUrl,
@@ -293,7 +302,6 @@ publishBtn.addEventListener('click', async () => {
 
     if (dbError) throw dbError;
 
-    // Resetear
     captionInput.value = '';
     fileInput.value = '';
     audioInput.value = '';
