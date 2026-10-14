@@ -1,9 +1,9 @@
 // 1. CONFIGURACIÓN SUPABASE
-// Reemplaza con los datos reales de tu proyecto
 const SUPABASE_URL = 'https://crmlyayzknjojjnsxpej.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNybWx5YXl6a25qb2pqbnN4cGVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMTIxNzEsImV4cCI6MjEwNzU4ODE3MX0.1hUcv0_yj6DoeUORovO3SSPpyCC3k1JFby1XQILn1KM';
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Inicialización correcta del cliente Supabase v2
+const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 // Elementos DOM
 const feed = document.getElementById('feed');
@@ -19,7 +19,7 @@ let selectedFile = null;
 let selectedFilter = 'normal';
 let isLooping = false;
 
-// Datos de demostración por si la base está vacía
+// Datos de demostración
 const DEMO_POSTS = [
   {
     id: 1,
@@ -47,20 +47,25 @@ const DEMO_POSTS = [
 // 2. CARGAR PUBLICACIONES
 async function loadPosts() {
   feed.innerHTML = '';
-  
   let posts = [];
-  try {
-    const { data, error } = await supabase
-      .from('posts')
-      .select('*')
-      .order('created_at', { ascending: false });
 
-    if (!error && data.length > 0) {
-      posts = data;
-    } else {
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('posts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        posts = data;
+      } else {
+        posts = DEMO_POSTS;
+      }
+    } catch (err) {
+      console.warn('Usando datos de prueba:', err);
       posts = DEMO_POSTS;
     }
-  } catch (err) {
+  } else {
     posts = DEMO_POSTS;
   }
 
@@ -151,11 +156,10 @@ function renderPost(post) {
   feed.appendChild(postEl);
 }
 
-// 3. DETECTAR EL FINAL Y VOLVER EN BUCLE A LA PRIMERA FOTO
+// 3. BUCLE DE SCROLL CONTINUO
 feed.addEventListener('scroll', () => {
   if (isLooping) return;
 
-  // Verificar si llegó al límite inferior
   const isAtBottom = feed.scrollTop + feed.clientHeight >= feed.scrollHeight - 10;
 
   if (isAtBottom) {
@@ -199,28 +203,34 @@ cancelBtn.addEventListener('click', () => {
 publishBtn.addEventListener('click', async () => {
   if (!selectedFile) return;
 
+  if (!supabaseClient) {
+    alert('Error: La conexión con Supabase no se ha inicializado.');
+    return;
+  }
+
   publishBtn.disabled = true;
   publishBtn.textContent = 'Subiendo...';
 
   try {
-    const fileName = `${Date.now()}_${selectedFile.name}`;
+    const fileExt = selectedFile.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
 
-    // Subir a Storage
-    const { data: storageData, error: storageError } = await supabase.storage
+    // Subir imagen al Bucket 'fotos'
+    const { data: storageData, error: storageError } = await supabaseClient.storage
       .from('fotos')
       .upload(fileName, selectedFile);
 
     if (storageError) throw storageError;
 
     // Obtener URL pública
-    const { data: publicUrlData } = supabase.storage
+    const { data: publicUrlData } = supabaseClient.storage
       .from('fotos')
       .getPublicUrl(fileName);
 
     const imageUrl = publicUrlData.publicUrl;
 
-    // Insertar registro en la base de datos
-    const { error: dbError } = await supabase
+    // Insertar registro en la tabla 'posts'
+    const { error: dbError } = await supabaseClient
       .from('posts')
       .insert([
         {
@@ -232,13 +242,14 @@ publishBtn.addEventListener('click', async () => {
 
     if (dbError) throw dbError;
 
-    // Limpiar modal
+    // Resetear formulario
     captionInput.value = '';
     previewModal.classList.remove('active');
     fileInput.value = '';
     selectedFile = null;
 
-    loadPosts();
+    // Recargar feed
+    await loadPosts();
 
   } catch (err) {
     alert('Error al publicar: ' + err.message);
@@ -248,5 +259,5 @@ publishBtn.addEventListener('click', async () => {
   }
 });
 
-// Iniciar app
-loadPosts();
+// Inicializar al cargar el DOM
+document.addEventListener('DOMContentLoaded', loadPosts);
