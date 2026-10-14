@@ -17,6 +17,7 @@ const filterTags = document.querySelectorAll('.filter-tag');
 
 let selectedFile = null;
 let selectedFilter = 'normal';
+let isLooping = false;
 
 // Datos de demostración por si la base está vacía
 const DEMO_POSTS = [
@@ -33,6 +34,13 @@ const DEMO_POSTS = [
     caption: 'Explorando nuevos rincones de la ciudad 🏙️',
     username: '@alex_travels',
     likes: 856
+  },
+  {
+    id: 3,
+    image_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800',
+    caption: 'Capturando momentos únicos 📸',
+    username: '@sofia_art',
+    likes: 2100
   }
 ];
 
@@ -122,12 +130,11 @@ function renderPost(post) {
   let lastTap = 0;
   const img = postEl.querySelector('.post-img');
 
-  img.addEventListener('click', (e) => {
+  img.addEventListener('click', () => {
     const currentTime = new Date().getTime();
     const tapLength = currentTime - lastTap;
     
     if (tapLength < 300 && tapLength > 0) {
-      // Crear animación de corazón
       const heart = document.createElement('i');
       heart.className = 'fa-solid fa-heart like-heart-anim';
       postEl.appendChild(heart);
@@ -144,7 +151,23 @@ function renderPost(post) {
   feed.appendChild(postEl);
 }
 
-// 3. CAPTURAR Y PREVISUALIZAR FOTO
+// 3. DETECTAR EL FINAL Y VOLVER EN BUCLE A LA PRIMERA FOTO
+feed.addEventListener('scroll', () => {
+  if (isLooping) return;
+
+  // Verificar si llegó al límite inferior
+  const isAtBottom = feed.scrollTop + feed.clientHeight >= feed.scrollHeight - 10;
+
+  if (isAtBottom) {
+    isLooping = true;
+    setTimeout(() => {
+      feed.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => { isLooping = false; }, 800);
+    }, 500);
+  }
+});
+
+// 4. CAPTURAR Y PREVISUALIZAR FOTO
 fileInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -172,7 +195,7 @@ cancelBtn.addEventListener('click', () => {
   selectedFile = null;
 });
 
-// 4. PUBLICAR FOTO EN SUPABASE
+// 5. PUBLICAR FOTO EN SUPABASE
 publishBtn.addEventListener('click', async () => {
   if (!selectedFile) return;
 
@@ -189,14 +212,14 @@ publishBtn.addEventListener('click', async () => {
 
     if (storageError) throw storageError;
 
-    // Obtener URL
+    // Obtener URL pública
     const { data: publicUrlData } = supabase.storage
       .from('fotos')
       .getPublicUrl(fileName);
 
     const imageUrl = publicUrlData.publicUrl;
 
-    // Insertar en la Base de Datos
+    // Insertar registro en la base de datos
     const { error: dbError } = await supabase
       .from('posts')
       .insert([
@@ -209,7 +232,7 @@ publishBtn.addEventListener('click', async () => {
 
     if (dbError) throw dbError;
 
-    // Resetear UI
+    // Limpiar modal
     captionInput.value = '';
     previewModal.classList.remove('active');
     fileInput.value = '';
