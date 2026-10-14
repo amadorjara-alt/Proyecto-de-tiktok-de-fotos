@@ -3,83 +3,97 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Lumina - Media Social</title>
+  <title>Lumina - Photo & Video Social</title>
 
+  <!-- FontAwesome (Íconos y Símbolos) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- SDK Supabase v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Estilos CSS -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Top Bar -->
+  <!-- Barra Superior Estilo Glassmorphism -->
   <header class="top-bar">
-    <div class="logo"><i class="fa-solid fa-bolt"></i> Lumina</div>
+    <div class="logo">
+      <i class="fa-solid fa-bolt-lightning glow-icon"></i>
+      <span>Lumina</span>
+    </div>
     <div class="top-tabs">
-      <span class="active">Para ti</span>
+      <span class="active"><i class="fa-solid fa-fire-flame-curved"></i> Para ti</span>
+      <span><i class="fa-solid fa-user-group"></i> Siguiendo</span>
+    </div>
+    <div class="search-icon">
+      <i class="fa-solid fa-magnifying-glass"></i>
     </div>
   </header>
 
-  <!-- Feed Principal -->
+  <!-- Feed Principal Snap-Scroll -->
   <main id="feed"></main>
 
-  <!-- Botón Flotante (+) para Subir Multimedia -->
+  <!-- Botón Flotante Central (+) con Brillo Neón -->
   <div class="upload-wrapper">
     <label for="file-input" class="upload-btn">
       <i class="fa-solid fa-plus"></i>
     </label>
-    <!-- Se remueve 'capture' para permitir elegir entre Cámara o Galería -->
+    <!-- Permite elegir tanto Foto como Video desde la Galería o Cámara -->
     <input type="file" id="file-input" accept="image/*,video/*">
   </div>
 
-  <!-- Modal de Creación / Vista Previa -->
+  <!-- Modal / Creación de Publicación -->
   <div id="preview-modal" class="modal">
     <div class="modal-card">
       <div class="modal-header">
         <button id="cancel-btn" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
-        <h3>Nueva Publicación</h3>
-        <button id="publish-btn" class="btn-primary">Publicar</button>
+        <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Nueva Publicación</h3>
+        <button id="publish-btn" class="btn-primary"><i class="fa-solid fa-paper-plane"></i> Publicar</button>
       </div>
 
-      <div class="preview-area" id="preview-container">
-        <!-- Se inserta dinámicamente <img> o <video> -->
-      </div>
+      <!-- Contenedor de Vista Previa (Foto o Video) -->
+      <div class="preview-area" id="preview-container"></div>
 
-      <!-- Selección de Filtro -->
+      <!-- Selector de Filtros Visuales -->
       <div class="filter-selector">
-        <span class="filter-tag active" data-filter="normal">Normal</span>
-        <span class="filter-tag" data-filter="vintage">Vintage</span>
-        <span class="filter-tag" data-filter="cyber">Cyber</span>
-        <span class="filter-tag" data-filter="bw">B&N</span>
+        <span class="filter-tag active" data-filter="normal"><i class="fa-solid fa-sparkles"></i> Normal</span>
+        <span class="filter-tag" data-filter="vintage"><i class="fa-solid fa-camera-retro"></i> Vintage</span>
+        <span class="filter-tag" data-filter="cyber"><i class="fa-solid fa-robot"></i> Cyber</span>
+        <span class="filter-tag" data-filter="bw"><i class="fa-solid fa-circle-half-stroke"></i> B&N</span>
       </div>
 
+      <!-- Campo para Descripción / Pie de Foto -->
       <div class="input-group">
-        <i class="fa-solid fa-pen"></i>
+        <i class="fa-solid fa-pen-nib"></i>
         <input type="text" id="caption-input" placeholder="Escribe un pie de foto o video..." maxlength="150">
       </div>
 
-      <!-- Selector Opcional de Música -->
-      <div class="input-group audio-input-group">
+      <!-- Campo para Audio / Música Opcional -->
+      <div class="input-group">
         <i class="fa-solid fa-music"></i>
         <input type="file" id="audio-input" accept="audio/*">
       </div>
     </div>
   </div>
 
-  <!-- Modal / Drawer de Comentarios -->
+  <!-- Modal / Panel Deslizante de Comentarios -->
   <div id="comments-modal" class="modal">
     <div class="modal-card comments-card">
       <div class="modal-header">
-        <h3>Comentarios</h3>
+        <h3><i class="fa-solid fa-comments"></i> Comentarios</h3>
         <button id="close-comments-btn" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div id="comments-list" class="comments-list"></div>
       <div class="comment-input-area">
-        <input type="text" id="new-comment-input" placeholder="Añadir comentario...">
+        <i class="fa-solid fa-comment-dots"></i>
+        <input type="text" id="new-comment-input" placeholder="Añadir un comentario público...">
         <button id="send-comment-btn" class="btn-primary"><i class="fa-solid fa-paper-plane"></i></button>
       </div>
     </div>
   </div>
 
+  <!-- JavaScript -->
   <script src="script.js"></script>
 </body>
 </html>
