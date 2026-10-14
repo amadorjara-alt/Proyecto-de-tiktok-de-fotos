@@ -1,94 +1,74 @@
-// 1. CONFIGURACIÓN SUPABASE
 const SUPABASE_URL = 'https://crmlyayzknjojjnsxpej.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNybWx5YXl6a25qb2pqbnN4cGVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMTIxNzEsImV4cCI6MjEwNzU4ODE3MX0.1hUcv0_yj6DoeUORovO3SSPpyCC3k1JFby1XQILn1KM';
 
-// Inicialización correcta del cliente Supabase v2
 const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 // Elementos DOM
 const feed = document.getElementById('feed');
 const fileInput = document.getElementById('file-input');
+const audioInput = document.getElementById('audio-input');
 const previewModal = document.getElementById('preview-modal');
-const previewImg = document.getElementById('preview-img');
+const previewContainer = document.getElementById('preview-container');
 const captionInput = document.getElementById('caption-input');
 const cancelBtn = document.getElementById('cancel-btn');
 const publishBtn = document.getElementById('publish-btn');
 const filterTags = document.querySelectorAll('.filter-tag');
 
+// Elementos Modal Comentarios
+const commentsModal = document.getElementById('comments-modal');
+const commentsList = document.getElementById('comments-list');
+const closeCommentsBtn = document.getElementById('close-comments-btn');
+const newCommentInput = document.getElementById('new-comment-input');
+const sendCommentBtn = document.getElementById('send-comment-btn');
+
 let selectedFile = null;
+let selectedAudioFile = null;
 let selectedFilter = 'normal';
-let isLooping = false;
+let activePostForComments = null;
 
-// Datos de demostración
-const DEMO_POSTS = [
-  {
-    id: 1,
-    image_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800',
-    caption: 'Atardecer inolvidable ✨ #vibes #photo',
-    username: '@carla_photo',
-    likes: 1240
-  },
-  {
-    id: 2,
-    image_url: 'https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=800',
-    caption: 'Explorando nuevos rincones de la ciudad 🏙️',
-    username: '@alex_travels',
-    likes: 856
-  },
-  {
-    id: 3,
-    image_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800',
-    caption: 'Capturando momentos únicos 📸',
-    username: '@sofia_art',
-    likes: 2100
-  }
-];
-
-// 2. CARGAR PUBLICACIONES
+// 1. CARGAR PUBLICACIONES REALES DESDE SUPABASE
 async function loadPosts() {
   feed.innerHTML = '';
-  let posts = [];
+  if (!supabaseClient) return;
 
-  if (supabaseClient) {
-    try {
-      const { data, error } = await supabaseClient
-        .from('posts')
-        .select('*')
-        .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabaseClient
+      .from('posts')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-      if (!error && data && data.length > 0) {
-        posts = data;
-      } else {
-        posts = DEMO_POSTS;
-      }
-    } catch (err) {
-      console.warn('Usando datos de prueba:', err);
-      posts = DEMO_POSTS;
+    if (!error && data) {
+      data.forEach(post => renderPost(post));
     }
-  } else {
-    posts = DEMO_POSTS;
+  } catch (err) {
+    console.error('Error cargando posts:', err);
   }
-
-  posts.forEach(post => renderPost(post));
 }
 
-// Renderizar una tarjeta individual
+// 2. RENDERIZAR PUBLICACIÓN (FOTO O VIDEO)
 function renderPost(post) {
   const postEl = document.createElement('div');
   postEl.className = 'post';
 
-  const likesCount = post.likes || Math.floor(Math.random() * 500) + 10;
-  const username = post.username || '@usuario_' + Math.floor(Math.random() * 100);
+  const isVideo = post.media_type === 'video';
+  const mediaHtml = isVideo
+    ? `<video class="post-media ${post.filter || ''}" src="${post.image_url}" loop playsinline autoplay muted></video>`
+    : `<img class="post-media ${post.filter || ''}" src="${post.image_url}" alt="Foto">`;
+
+  const audioHtml = post.audio_url 
+    ? `<audio class="post-audio" src="${post.audio_url}" loop></audio>` 
+    : '';
 
   postEl.innerHTML = `
-    <img class="post-img ${post.filter || ''}" src="${post.image_url}" alt="Foto">
-    
+    ${mediaHtml}
+    ${audioHtml}
+
     <div class="post-overlay">
       <div class="user-info">
-        <img class="avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=${username}" alt="Avatar">
-        <span class="username">${username}</span>
+        <span class="username">${post.username || '@anonimo'}</span>
       </div>
       <p class="caption">${post.caption || ''}</p>
+      ${post.audio_title ? `<p class="audio-info"><i class="fa-solid fa-music"></i> \${post.audio_title}</p>` : ''}
     </div>
 
     <div class="action-bar">
@@ -96,160 +76,232 @@ function renderPost(post) {
         <button class="action-btn like-btn">
           <i class="fa-solid fa-heart"></i>
         </button>
-        <div class="action-count count-likes">${likesCount}</div>
+        <div class="action-count count-likes">${post.likes_count || 0}</div>
       </div>
 
       <div>
         <button class="action-btn comment-btn">
           <i class="fa-solid fa-comment-dots"></i>
         </button>
-        <div class="action-count">34</div>
+        <div class="action-count count-comments">0</div>
       </div>
 
-      <div>
-        <button class="action-btn share-btn">
-          <i class="fa-solid fa-paper-plane"></i>
-        </button>
-        <div class="action-count">Compartir</div>
-      </div>
-
-      <div class="vinyl-disc">
-        <i class="fa-solid fa-music" style="font-size: 10px; color: #00f2fe;"></i>
+      <div class="vinyl-disc ${post.audio_url ? 'spinning' : ''}">
+        <i class="fa-solid fa-music"></i>
       </div>
     </div>
   `;
 
-  // Interacciones: Botón "Me gusta"
+  // Autoplay / Audio al hacer click o scroll
+  const mediaEl = postEl.querySelector('.post-media');
+  const audioElement = postEl.querySelector('.post-audio');
+
+  postEl.addEventListener('click', () => {
+    if (isVideo) {
+      mediaEl.paused ? mediaEl.play() : mediaEl.pause();
+    }
+    if (audioElement) {
+      audioElement.paused ? audioElement.play() : audioElement.pause();
+    }
+  });
+
+  // Contador real de Me Gusta en Supabase
   const likeBtn = postEl.querySelector('.like-btn');
   const countLikes = postEl.querySelector('.count-likes');
   let isLiked = false;
 
-  likeBtn.addEventListener('click', () => {
+  likeBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
     isLiked = !isLiked;
     likeBtn.classList.toggle('liked', isLiked);
-    let current = parseInt(countLikes.textContent);
-    countLikes.textContent = isLiked ? current + 1 : current - 1;
+
+    let current = parseInt(countLikes.textContent) || 0;
+    const newCount = isLiked ? current + 1 : Math.max(0, current - 1);
+    countLikes.textContent = newCount;
+
+    // Actualizar en base de datos
+    await supabaseClient
+      .from('posts')
+      .update({ likes_count: newCount })
+      .eq('id', post.id);
   });
 
-  // Interacción: Doble Toque en la imagen para dar Like
-  let lastTap = 0;
-  const img = postEl.querySelector('.post-img');
+  // Cargar contador de comentarios y abrir modal
+  const commentBtn = postEl.querySelector('.comment-btn');
+  const countComments = postEl.querySelector('.count-comments');
 
-  img.addEventListener('click', () => {
-    const currentTime = new Date().getTime();
-    const tapLength = currentTime - lastTap;
-    
-    if (tapLength < 300 && tapLength > 0) {
-      const heart = document.createElement('i');
-      heart.className = 'fa-solid fa-heart like-heart-anim';
-      postEl.appendChild(heart);
+  loadCommentCount(post.id, countComments);
 
-      setTimeout(() => heart.remove(), 700);
-
-      if (!isLiked) {
-        likeBtn.click();
-      }
-    }
-    lastTap = currentTime;
+  commentBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openCommentsModal(post.id);
   });
 
   feed.appendChild(postEl);
 }
 
-// 3. BUCLE DE SCROLL CONTINUO
-feed.addEventListener('scroll', () => {
-  if (isLooping) return;
+// 3. GESTIÓN DE COMENTARIOS REALES
+async function loadCommentCount(postId, element) {
+  const { count } = await supabaseClient
+    .from('comments')
+    .select('*', { count: 'exact', head: true })
+    .eq('post_id', postId);
 
-  const isAtBottom = feed.scrollTop + feed.clientHeight >= feed.scrollHeight - 10;
+  element.textContent = count || 0;
+}
 
-  if (isAtBottom) {
-    isLooping = true;
-    setTimeout(() => {
-      feed.scrollTo({ top: 0, behavior: 'smooth' });
-      setTimeout(() => { isLooping = false; }, 800);
-    }, 500);
+async function openCommentsModal(postId) {
+  activePostForComments = postId;
+  commentsModal.classList.add('active');
+  commentsList.innerHTML = 'Cargando comentarios...';
+
+  const { data } = await supabaseClient
+    .from('comments')
+    .select('*')
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true });
+
+  commentsList.innerHTML = '';
+  if (data && data.length > 0) {
+    data.forEach(c => {
+      const item = document.createElement('div');
+      item.className = 'comment-item';
+      item.innerHTML = `<strong>@usuario:</strong> ${c.content}`;
+      commentsList.appendChild(item);
+    });
+  } else {
+    commentsList.innerHTML = '<p class="no-comments">Aún no hay comentarios. ¡Sé el primero!</p>';
   }
+}
+
+sendCommentBtn.addEventListener('click', async () => {
+  const text = newCommentInput.value.trim();
+  if (!text || !activePostForComments) return;
+
+  await supabaseClient.from('comments').insert([
+    { post_id: activePostForComments, content: text }
+  ]);
+
+  newCommentInput.value = '';
+  openCommentsModal(activePostForComments);
+  loadPosts(); // Refrescar conteos
 });
 
-// 4. CAPTURAR Y PREVISUALIZAR FOTO
+closeCommentsBtn.addEventListener('click', () => {
+  commentsModal.classList.remove('active');
+  activePostForComments = null;
+});
+
+// 4. PREVISUALIZAR IMAGEN / VIDEO SELECCIONADO
 fileInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
   selectedFile = file;
-  previewImg.src = URL.createObjectURL(file);
+  previewContainer.innerHTML = '';
+
+  const isVideo = file.type.startsWith('video/');
+  const mediaEl = document.createElement(isVideo ? 'video' : 'img');
+  mediaEl.src = URL.createObjectURL(file);
+  mediaEl.id = 'preview-img';
+
+  if (isVideo) {
+    mediaEl.autoplay = true;
+    mediaEl.loop = true;
+    mediaEl.muted = true;
+  }
+
+  previewContainer.appendChild(mediaEl);
   previewModal.classList.add('active');
 });
 
-// Selección de Filtros
+audioInput.addEventListener('change', (e) => {
+  selectedAudioFile = e.target.files[0] || null;
+});
+
+// Filtros
 filterTags.forEach(tag => {
   tag.addEventListener('click', () => {
     filterTags.forEach(t => t.classList.remove('active'));
     tag.classList.add('active');
-    
     selectedFilter = tag.dataset.filter;
-    previewImg.className = selectedFilter !== 'normal' ? `filter-${selectedFilter}` : '';
+    const media = document.getElementById('preview-img');
+    if (media) media.className = selectedFilter !== 'normal' ? `filter-${selectedFilter}` : '';
   });
 });
 
-// Cancelar modal
 cancelBtn.addEventListener('click', () => {
   previewModal.classList.remove('active');
   fileInput.value = '';
+  audioInput.value = '';
   selectedFile = null;
+  selectedAudioFile = null;
 });
 
-// 5. PUBLICAR FOTO EN SUPABASE
+// 5. SUBIR FOTO/VIDEO + MÚSICA A SUPABASE
 publishBtn.addEventListener('click', async () => {
-  if (!selectedFile) return;
-
-  if (!supabaseClient) {
-    alert('Error: La conexión con Supabase no se ha inicializado.');
-    return;
-  }
+  if (!selectedFile || !supabaseClient) return;
 
   publishBtn.disabled = true;
   publishBtn.textContent = 'Subiendo...';
 
   try {
-    const fileExt = selectedFile.name.split('.').pop();
-    const fileName = `${Date.now()}.${fileExt}`;
+    const isVideo = selectedFile.type.startsWith('video/');
+    const mediaExt = selectedFile.name.split('.').pop();
+    const mediaName = `${Date.now()}_media.${mediaExt}`;
 
-    // Subir imagen al Bucket 'fotos'
-    const { data: storageData, error: storageError } = await supabaseClient.storage
+    // 1. Subir Foto/Video a bucket 'fotos'
+    const { error: mediaError } = await supabaseClient.storage
       .from('fotos')
-      .upload(fileName, selectedFile);
+      .upload(mediaName, selectedFile);
 
-    if (storageError) throw storageError;
+    if (mediaError) throw mediaError;
 
-    // Obtener URL pública
-    const { data: publicUrlData } = supabaseClient.storage
+    const { data: mediaUrlData } = supabaseClient.storage
       .from('fotos')
-      .getPublicUrl(fileName);
+      .getPublicUrl(mediaName);
 
-    const imageUrl = publicUrlData.publicUrl;
+    // 2. Subir Audio opcional a bucket 'audio'
+    let audioPublicUrl = null;
+    if (selectedAudioFile) {
+      const audioExt = selectedAudioFile.name.split('.').pop();
+      const audioName = `${Date.now()}_audio.${audioExt}`;
 
-    // Insertar registro en la tabla 'posts'
-    const { error: dbError } = await supabaseClient
-      .from('posts')
-      .insert([
-        {
-          image_url: imageUrl,
-          caption: captionInput.value,
-          filter: selectedFilter !== 'normal' ? `filter-${selectedFilter}` : ''
-        }
-      ]);
+      const { error: audioError } = await supabaseClient.storage
+        .from('audio')
+        .upload(audioName, selectedAudioFile);
+
+      if (!audioError) {
+        const { data: audioUrlData } = supabaseClient.storage
+          .from('audio')
+          .getPublicUrl(audioName);
+        audioPublicUrl = audioUrlData.publicUrl;
+      }
+    }
+
+    // 3. Guardar registro en Supabase
+    const { error: dbError } = await supabaseClient.from('posts').insert([
+      {
+        image_url: mediaUrlData.publicUrl,
+        media_type: isVideo ? 'video' : 'image',
+        caption: captionInput.value,
+        filter: selectedFilter !== 'normal' ? `filter-${selectedFilter}` : '',
+        audio_url: audioPublicUrl,
+        audio_title: selectedAudioFile ? selectedAudioFile.name : 'Sonido original'
+      }
+    ]);
 
     if (dbError) throw dbError;
 
-    // Resetear formulario
+    // Resetear
     captionInput.value = '';
-    previewModal.classList.remove('active');
     fileInput.value = '';
+    audioInput.value = '';
     selectedFile = null;
+    selectedAudioFile = null;
+    previewModal.classList.remove('active');
 
-    // Recargar feed
-    await loadPosts();
+    loadPosts();
 
   } catch (err) {
     alert('Error al publicar: ' + err.message);
@@ -259,5 +311,4 @@ publishBtn.addEventListener('click', async () => {
   }
 });
 
-// Inicializar al cargar el DOM
 document.addEventListener('DOMContentLoaded', loadPosts);
