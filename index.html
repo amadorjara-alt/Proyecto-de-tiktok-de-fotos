@@ -5,12 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Lumina - Photo Social</title>
 
-  <!-- Fuentes e Iconos desde CDN -->
+  <!-- Iconos de FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css">
-
-  <!-- SDK Supabase -->
+  
+  <!-- SDK Supabase v2 (Cargado en el HEAD para garantizar disponibilidad) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Hoja de Estilos -->
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -27,7 +29,7 @@
   <!-- Feed Principal de Fotos -->
   <main id="feed"></main>
 
-  <!-- Botón Flotante Central (+) -->
+  <!-- Botón Flotante Central (+) para la Cámara -->
   <div class="upload-wrapper">
     <label for="file-input" class="upload-btn">
       <i class="fa-solid fa-plus"></i>
@@ -35,7 +37,7 @@
     <input type="file" id="file-input" accept="image/*" capture="environment">
   </div>
 
-  <!-- Modal / Drawer para la Previsualización de Fotos -->
+  <!-- Modal / Vista Previa de la Foto -->
   <div id="preview-modal" class="modal">
     <div class="modal-card">
       <div class="modal-header">
@@ -48,7 +50,7 @@
         <img id="preview-img" src="" alt="Vista previa">
       </div>
 
-      <!-- Filtros para la foto -->
+      <!-- Filtros -->
       <div class="filter-selector">
         <span class="filter-tag active" data-filter="normal">Normal</span>
         <span class="filter-tag" data-filter="vintage">Vintage</span>
@@ -63,6 +65,7 @@
     </div>
   </div>
 
+  <!-- Código JavaScript principal -->
   <script src="script.js"></script>
 </body>
 </html>
