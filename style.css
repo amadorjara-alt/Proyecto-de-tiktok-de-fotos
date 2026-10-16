@@ -1,4 +1,4 @@
-* {
+si otra ve * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -847,5 +847,297 @@ a:focus-visible {
 
   .post-overlay {
     padding-bottom: 22px;
+  }
+}
+
+/* ==========================================
+   LUMINA — CÁMARA Y CAPTURA DE CONTENIDO
+   Agregar al final de style.css
+   ========================================== */
+
+.camera-tools {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.camera-tools button {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 66px;
+  padding: 10px 5px;
+  border: 1px solid #ffffff18;
+  border-radius: 13px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 650;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.camera-tools button i {
+  color: var(--cyan);
+  font-size: 1.2rem;
+}
+
+.camera-tools button:active {
+  transform: scale(0.96);
+}
+
+.camera-tools button.active {
+  background: #00f2fe1c;
+  border-color: var(--cyan);
+}
+
+.camera-stage {
+  position: relative;
+  width: 100%;
+  min-height: 200px;
+  max-height: 360px;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+  border: 1px solid #ffffff16;
+  border-radius: 16px;
+}
+
+.camera-stage video,
+.camera-stage canvas,
+.camera-stage img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.camera-stage video {
+  background: #000;
+}
+
+.camera-stage .camera-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.camera-placeholder i {
+  color: var(--cyan);
+  font-size: 2.3rem;
+}
+
+.camera-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+}
+
+.camera-control-btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid #ffffff20;
+  border-radius: 22px;
+  background: var(--panel-2);
+  color: white;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.camera-control-btn i {
+  color: var(--cyan);
+}
+
+.camera-control-btn.capture {
+  width: 58px;
+  height: 58px;
+  padding: 0;
+  border: 4px solid #ffffffbb;
+  border-radius: 50%;
+  background: var(--pink);
+  box-shadow: 0 0 0 4px #ffffff20;
+  color: white;
+  font-size: 1.25rem;
+}
+
+.camera-control-btn.capture i {
+  color: white;
+}
+
+.camera-control-btn.recording {
+  background: #a3002b;
+  border-color: #ff829f;
+  animation: cameraPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes cameraPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 #ff005055;
+  }
+
+  50% {
+    box-shadow: 0 0 0 7px #ff005000;
+  }
+}
+
+.camera-status {
+  min-height: 1.2em;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.camera-status.error {
+  color: #ff829f;
+}
+
+.camera-status.success {
+  color: #6ee7b7;
+}
+
+.camera-filter-selector {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  overflow-x: auto;
+  padding: 4px 0 8px;
+  scrollbar-width: thin;
+}
+
+.camera-filter {
+  flex: 0 0 auto;
+  min-width: 70px;
+  padding: 8px 12px;
+  border: 1px solid #ffffff18;
+  border-radius: 18px;
+  background: var(--panel-2);
+  color: white;
+  font-size: 0.8rem;
+}
+
+.camera-filter.active {
+  border-color: var(--cyan);
+  background: #00f2fe1c;
+  color: var(--cyan);
+  font-weight: 750;
+}
+
+/* Filtros para la vista previa de cámara */
+
+.camera-filter-normal {
+  filter: none;
+}
+
+.camera-filter-vintage {
+  filter: sepia(0.55) contrast(1.08) saturate(0.85);
+}
+
+.camera-filter-cyber {
+  filter: hue-rotate(80deg) saturate(1.55) contrast(1.08);
+}
+
+.camera-filter-bw {
+  filter: grayscale(1) contrast(1.12);
+}
+
+/* Evita que el contenido del modal se desborde */
+
+.modal-card,
+.modal-header,
+.preview-area,
+.camera-stage {
+  min-width: 0;
+}
+
+.modal-card > * {
+  max-width: 100%;
+}
+
+.filter-selector,
+.camera-filter-selector {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ajustes para pantallas pequeñas */
+
+@media (max-width: 380px) {
+  .camera-tools {
+    gap: 5px;
+  }
+
+  .camera-tools button {
+    font-size: 0.7rem;
+    padding-inline: 3px;
+  }
+
+  .camera-control-btn {
+    padding: 9px 12px;
+    font-size: 0.8rem;
+  }
+
+  .camera-stage {
+    min-height: 170px;
+    max-height: 280px;
+  }
+
+  .modal-card {
+    padding: 14px;
+  }
+}
+
+/* Ajustes para pantallas bajas */
+
+@media (max-height: 650px) {
+  .camera-stage {
+    min-height: 110px;
+    max-height: 200px;
+  }
+
+  .camera-tools button {
+    min-height: 52px;
+    padding-block: 6px;
+  }
+
+  .camera-control-btn.capture {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* Reduce animaciones si el usuario lo solicita */
+
+@media (prefers-reduced-motion: reduce) {
+  .camera-control-btn.recording {
+    animation: none;
+  }
+
+  .camera-tools button {
+    transition: none;
   }
 }
