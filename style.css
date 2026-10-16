@@ -1229,27 +1229,32 @@ a:focus-visible {
   color: #111;
 }
 
-/* Los filtros se aplican a la vista previa y al contenido compatible */
+/* ===== LUMINA: FILTROS VISUALES RESTAURADOS ===== */
+
 .filter-vintage {
   filter: sepia(0.55) saturate(1.25) contrast(1.05);
 }
 
+/* CYBER: verde neón futurista */
 .filter-cyber {
-  filter: saturate(1.9) contrast(1.15) hue-rotate(12deg);
+  filter: sepia(0.25) saturate(2.1) hue-rotate(65deg)
+          contrast(1.2) brightness(1.05);
 }
 
+/* Blanco y negro */
 .filter-bw {
   filter: grayscale(1) contrast(1.08);
 }
 
-@media (max-width: 480px) {
-  .filter-selector {
-    gap: 10px;
-  }
+/* Miniatura del filtro Cyber */
+.filter-cyber-preview {
+  background: linear-gradient(135deg, #00ff88, #00d9ff, #063d26);
+  color: #fff;
+  text-shadow: 0 0 8px #00ff88;
+}
 
-  .filter-preview {
-    width: 60px;
-    height: 60px;
-    border-radius: 16px;
-  }
+/* Resaltar el filtro seleccionado */
+.filter-tag.active .filter-preview {
+  border-color: #00ff88;
+  box-shadow: 0 0 0 3px rgb(0 255 136 / 20%);
 }
