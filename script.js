@@ -1414,3 +1414,449 @@ document.addEventListener('DOMContentLoaded', () => {
   observeVideos();
   loadPosts();
 });
+
+
+/* ============================================
+   LUMINA — CÁMARA, FOTOS Y VIDEOS
+   Añadir al final de script.js
+   ============================================ */
+
+(() => {
+  const composerCard = document.querySelector(
+    '#preview-modal .modal-card'
+  );
+
+  const previewContainer = document.querySelector(
+    '#preview-container'
+  );
+
+  if (!composerCard || !previewContainer) {
+    console.warn(
+      'Lumina Cámara: no se encontró el modal o la vista previa.'
+    );
+    return;
+  }
+
+  let cameraStream = null;
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  let recording = false;
+
+  // Crear la interfaz de cámara sin reemplazar el HTML existente.
+  const cameraSection = document.createElement('section');
+  cameraSection.className = 'camera-section';
+
+  cameraSection.innerHTML = `
+    <div class="camera-tools">
+      <button type="button" id="lumina-open-camera">
+        <i class="fa-solid fa-camera"></i>
+        <span>Abrir cámara</span>
+      </button>
+
+      <button type="button" id="lumina-take-photo" disabled>
+        <i class="fa-solid fa-camera-retro"></i>
+        <span>Tomar foto</span>
+      </button>
+
+      <button type="button" id="lumina-record-video" disabled>
+        <i class="fa-solid fa-video"></i>
+        <span>Grabar video</span>
+      </button>
+    </div>
+
+    <div class="camera-stage" id="lumina-camera-stage" hidden>
+      <video
+        id="lumina-camera-video"
+        autoplay
+        muted
+        playsinline
+      ></video>
+    </div>
+
+    <div class="camera-controls">
+      <button
+        type="button"
+        class="camera-control-btn"
+        id="lumina-switch-camera"
+        disabled
+      >
+        <i class="fa-solid fa-camera-rotate"></i>
+        Cambiar cámara
+      </button>
+
+      <button
+        type="button"
+        class="camera-control-btn"
+        id="lumina-stop-camera"
+        hidden
+      >
+        <i class="fa-solid fa-stop"></i>
+        Cerrar cámara
+      </button>
+    </div>
+
+    <p
+      class="camera-status"
+      id="lumina-camera-status"
+      aria-live="polite"
+    >Puedes tomar una foto o grabar un video.</p>
+  `;
+
+  const mediaSelector = composerCard.querySelector(
+    '.media-type-selector'
+  );
+
+  if (mediaSelector) {
+    mediaSelector.insertAdjacentElement('afterend', cameraSection);
+  } else {
+    previewContainer.insertAdjacentElement(
+      'beforebegin',
+      cameraSection
+    );
+  }
+
+  const openButton = document.querySelector('#lumina-open-camera');
+  const photoButton = document.querySelector('#lumina-take-photo');
+  const recordButton = document.querySelector('#lumina-record-video');
+  const switchButton = document.querySelector('#lumina-switch-camera');
+  const stopButton = document.querySelector('#lumina-stop-camera');
+  const stage = document.querySelector('#lumina-camera-stage');
+  const cameraVideo = document.querySelector('#lumina-camera-video');
+  const status = document.querySelector('#lumina-camera-status');
+  const fileInfo = document.querySelector('#file-info');
+
+  let facingMode = 'environment';
+
+  function setStatus(message, type = '') {
+    status.textContent = message;
+    status.className = `camera-status ${type}`.trim();
+  }
+
+  function stopCamera() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+    }
+
+    cameraStream = null;
+    cameraVideo.srcObject = null;
+    stage.hidden = true;
+
+    photoButton.disabled = true;
+    recordButton.disabled = true;
+    switchButton.disabled = true;
+    stopButton.hidden = true;
+
+    if (recording && mediaRecorder) {
+      if (mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+    }
+
+    recording = false;
+    recordButton.classList.remove('recording');
+    recordButton.innerHTML = `
+      <i class="fa-solid fa-video"></i>
+      <span>Grabar video</span>
+    `;
+  }
+
+  async function openCamera() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setStatus(
+        'Tu navegador no permite abrir la cámara aquí. Usa HTTPS o localhost.',
+        'error'
+      );
+      return;
+    }
+
+    stopCamera();
+    setStatus('Solicitando permiso para usar la cámara…');
+
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: {
+          facingMode,
+          width: { ideal: 1080 },
+          height: { ideal: 1920 }
+        }
+      });
+
+      cameraVideo.srcObject = cameraStream;
+      stage.hidden = false;
+
+      await cameraVideo.play();
+
+      photoButton.disabled = false;
+      recordButton.disabled = !window.MediaRecorder;
+      switchButton.disabled = false;
+      stopButton.hidden = false;
+
+      setStatus(
+        'Cámara activa. Puedes tomar una foto o grabar un video.',
+        'success'
+      );
+    } catch (error) {
+      console.error('Lumina: error al abrir cámara:', error);
+
+      stopCamera();
+
+      if (
+        error.name === 'NotAllowedError' ||
+        error.name === 'PermissionDeniedError'
+      ) {
+        setStatus(
+          'Permite el acceso a la cámara y al micrófono en tu navegador.',
+          'error'
+        );
+      } else if (error.name === 'NotFoundError') {
+        setStatus('No se encontró una cámara disponible.', 'error');
+      } else {
+        setStatus(
+          `No se pudo abrir la cámara: ${error.message || 'error desconocido'}`,
+          'error'
+        );
+      }
+    }
+  }
+
+  function useCapturedFile(blob, type, extension) {
+    if (!blob || blob.size === 0) {
+      setStatus('No se pudo generar el archivo.', 'error');
+      return;
+    }
+
+    if (blob.size > 100 * 1024 * 1024) {
+      setStatus('El archivo supera el límite de 100 MB.', 'error');
+      return;
+    }
+
+    // Reutiliza las variables y funciones originales de Lumina.
+    resetPreviewUrl();
+
+    selectedType = type;
+    selectedFile = new File(
+      [blob],
+      `lumina_${Date.now()}.${extension}`,
+      { type: blob.type }
+    );
+
+    selectedAudioFile = null;
+    selectedFilter = 'normal';
+
+    const fileInput = document.querySelector('#file-input');
+    const audioInput = document.querySelector('#audio-input');
+
+    if (fileInput) fileInput.value = '';
+    if (audioInput) audioInput.value = '';
+
+    previewObjectUrl = URL.createObjectURL(selectedFile);
+
+    if (fileInfo) {
+      fileInfo.textContent =
+        `${selectedFile.name} · ${formatBytes(selectedFile.size)}`;
+    }
+
+    document.querySelectorAll('.media-type').forEach(button => {
+      button.classList.toggle(
+        'active',
+        button.dataset.type === type
+      );
+    });
+
+    document.querySelectorAll('.filter-tag').forEach(button => {
+      button.classList.toggle(
+        'active',
+        button.dataset.filter === 'normal'
+      );
+    });
+
+    applyFileAccept();
+    renderPreview();
+    updatePublishButton();
+
+    setStatus(
+      type === 'image'
+        ? 'Foto lista. Puedes aplicar un filtro y publicarla.'
+        : 'Video listo. Puedes publicarlo desde Lumina.',
+      'success'
+    );
+
+    stopCamera();
+  }
+
+  function takePhoto() {
+    if (!cameraStream || !cameraVideo.videoWidth) {
+      setStatus('Espera a que la cámara esté lista.', 'error');
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = cameraVideo.videoWidth;
+    canvas.height = cameraVideo.videoHeight;
+
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      setStatus('No se pudo procesar la foto.', 'error');
+      return;
+    }
+
+    // Captura la imagen tal como se ve en la cámara.
+    context.drawImage(
+      cameraVideo,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
+    canvas.toBlob(blob => {
+      if (blob) {
+        useCapturedFile(blob, 'image', 'jpg');
+      } else {
+        setStatus('No se pudo guardar la foto.', 'error');
+      }
+    }, 'image/jpeg', 0.92);
+  }
+
+  function toggleRecording() {
+    if (recording && mediaRecorder) {
+      if (mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+      return;
+    }
+
+    if (!cameraStream) {
+      setStatus('Abre la cámara antes de grabar.', 'error');
+      return;
+    }
+
+    if (!window.MediaRecorder) {
+      setStatus(
+        'Tu navegador no admite grabación de video.',
+        'error'
+      );
+      return;
+    }
+
+    const supportedTypes = [
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm',
+      'video/mp4'
+    ];
+
+    const mimeType = supportedTypes.find(type =>
+      MediaRecorder.isTypeSupported(type)
+    );
+
+    try {
+      mediaRecorder = mimeType
+        ? new MediaRecorder(cameraStream, { mimeType })
+        : new MediaRecorder(cameraStream);
+
+      recordedChunks = [];
+
+      mediaRecorder.addEventListener('dataavailable', event => {
+        if (event.data?.size) {
+          recordedChunks.push(event.data);
+        }
+      });
+
+      mediaRecorder.addEventListener('stop', () => {
+        const actualType =
+          mediaRecorder.mimeType || 'video/webm';
+
+        const extension = actualType.includes('mp4')
+          ? 'mp4'
+          : 'webm';
+
+        const blob = new Blob(recordedChunks, {
+          type: actualType
+        });
+
+        recording = false;
+        recordButton.classList.remove('recording');
+        recordButton.innerHTML = `
+          <i class="fa-solid fa-video"></i>
+          <span>Grabar video</span>
+        `;
+
+        useCapturedFile(blob, 'video', extension);
+      }, { once: true });
+
+      mediaRecorder.start(1000);
+      recording = true;
+
+      recordButton.classList.add('recording');
+      recordButton.innerHTML = `
+        <i class="fa-solid fa-stop"></i>
+        <span>Detener grabación</span>
+      `;
+
+      setStatus(
+        'Grabando video. Pulsa de nuevo para detenerlo.',
+        'success'
+      );
+    } catch (error) {
+      console.error('Lumina: error al grabar:', error);
+      setStatus('No se pudo iniciar la grabación.', 'error');
+    }
+  }
+
+  async function switchCamera() {
+    facingMode = facingMode === 'environment'
+      ? 'user'
+      : 'environment';
+
+    await openCamera();
+  }
+
+  openButton.addEventListener('click', openCamera);
+  photoButton.addEventListener('click', takePhoto);
+  recordButton.addEventListener('click', toggleRecording);
+  switchButton.addEventListener('click', switchCamera);
+  stopButton.addEventListener('click', () => {
+    stopCamera();
+    setStatus('Cámara cerrada.');
+  });
+
+  // Cierra la cámara al cerrar el modal.
+  document.querySelector('#cancel-btn')?.addEventListener(
+    'click',
+    stopCamera
+  );
+
+  document.querySelector('#close-comments-btn')
+    ?.addEventListener('click', stopCamera);
+
+  document.querySelector('#preview-modal')
+    ?.addEventListener('click', event => {
+      if (event.target.id === 'preview-modal') {
+        stopCamera();
+      }
+    });
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      stopCamera();
+    }
+  });
+
+  // También detiene la cámara al cambiar de publicación o cerrar el modal.
+  const modal = document.querySelector('#preview-modal');
+
+  if (modal) {
+    new MutationObserver(() => {
+      if (modal.hidden) stopCamera();
+    }).observe(modal, {
+      attributes: true,
+      attributeFilter: ['hidden']
+    });
+  }
+
+  console.info('Lumina: módulo de cámara inicializado.');
+})();
+
