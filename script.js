@@ -10,7 +10,7 @@ const SUPABASE_URL =
 
 // Pega aquí tu clave PUBLICABLE sb_publishable_...
 // Nunca uses una clave sb_secret_ en el navegador.
-const SUPABASE_ANON_KEY = 'PEGA_AQUI_TU_CLAVE_PUBLICABLE';
+const SUPABASE_ANON_KEY = 'sb_publishable_ywTHI-07EYSo5-ZH5Lyifw_U28_vM77';
 
 const MEDIA_BUCKET = 'fotos';
 const AUDIO_BUCKET = 'audio';
