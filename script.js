@@ -3,7 +3,7 @@
 // ============================================
 
 const SUPABASE_URL = 'https://crmlyayzknjojjnsxpej.supabase.co';
-const SUPABASE_ANON_KEY = 'PEGA_AQUI_TU_CLAVE_ANON_ACTUAL';
+const SUPABASE_ANON_KEY = 'sb_publishable_ywTHI-07EYSo5-ZH5Lyifw_U28_vM77';
 
 const MEDIA_BUCKET = 'fotos';
 const AUDIO_BUCKET = 'audio';
