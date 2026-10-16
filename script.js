@@ -1860,3 +1860,77 @@ document.addEventListener('DOMContentLoaded', () => {
   console.info('Lumina: módulo de cámara inicializado.');
 })();
 
+
+/* =========================================
+   LUMINA — SISTEMA DE FILTROS
+========================================= */
+(() => {
+  function initLuminaFilters() {
+    const filterButtons = document.querySelectorAll(".filter-tag");
+    const previewContainer = document.querySelector("#preview-container");
+    const cameraVideo = document.querySelector("#camera-video");
+
+    if (!filterButtons.length || !previewContainer) return;
+
+    const filterClasses = [
+      "filter-vintage",
+      "filter-cyber",
+      "filter-bw"
+    ];
+
+    function applyFilter(filterName) {
+      // Guardar filtro seleccionado para el sistema de publicación existente.
+      if (typeof selectedFilter !== "undefined") {
+        selectedFilter = filterName;
+      }
+
+      // Actualizar botones.
+      filterButtons.forEach((button) => {
+        const active = button.dataset.filter === filterName;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+
+      // Aplicar filtro a la vista previa.
+      const media = previewContainer.querySelector("img, video");
+
+      if (media) {
+        media.classList.remove(...filterClasses);
+
+        if (filterName !== "normal") {
+          media.classList.add(`filter-${filterName}`);
+        }
+      }
+
+      // Aplicar también a la imagen de cámara en directo.
+      if (cameraVideo) {
+        cameraVideo.classList.remove(...filterClasses);
+
+        if (filterName !== "normal") {
+          cameraVideo.classList.add(`filter-${filterName}`);
+        }
+      }
+    }
+
+    filterButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        applyFilter(button.dataset.filter || "normal");
+      });
+    });
+
+    // Recuperar el filtro seleccionado al iniciar.
+    applyFilter(
+      typeof selectedFilter !== "undefined"
+        ? selectedFilter
+        : "normal"
+    );
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initLuminaFilters, {
+      once: true
+    });
+  } else {
+    initLuminaFilters();
+  }
+})();
