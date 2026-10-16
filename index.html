@@ -3,146 +3,512 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#101014">
-  <meta name="description" content="Lumina: comparte fotos, videos, audio y archivos.">
+  <meta name="description" content="Lumina: comparte fotos, videos, audio y archivos con tu comunidad.">
   <meta name="color-scheme" content="dark">
+
   <title>Lumina — Comparte tus momentos</title>
 
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='85'%3E⚡%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link
+    rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='85'%3E⚡%3C/text%3E%3C/svg%3E"
+  >
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  >
+
   <link rel="stylesheet" href="style.css">
 
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Aplicación -->
   <script src="script.js" defer></script>
 </head>
+
 <body>
+  <!-- Barra superior -->
   <header class="top-bar">
     <a href="#" class="logo" aria-label="Lumina, inicio">
-      <i class="fa-solid fa-bolt"></i><span>Lumina</span>
+      <i class="fa-solid fa-bolt" aria-hidden="true"></i>
+      <span>Lumina</span>
     </a>
 
-    <nav class="top-tabs" aria-label="Publicaciones">
-      <button class="active" type="button" data-feed="for-you" aria-pressed="true">Para ti</button>
-      <button type="button" data-feed="following" aria-pressed="false">Siguiendo</button>
+    <nav class="top-tabs" aria-label="Contenido del feed">
+      <button
+        class="active"
+        type="button"
+        data-feed="for-you"
+        aria-pressed="true"
+      >
+        Para ti
+      </button>
+
+      <button
+        type="button"
+        data-feed="following"
+        aria-pressed="false"
+      >
+        Siguiendo
+      </button>
     </nav>
 
-    <button class="icon-btn" id="search-toggle" type="button" aria-label="Buscar" aria-expanded="false">
-      <i class="fa-solid fa-magnifying-glass"></i>
+    <button
+      class="icon-btn"
+      id="search-toggle"
+      type="button"
+      aria-label="Abrir búsqueda"
+      aria-expanded="false"
+      aria-controls="search-panel"
+    >
+      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
     </button>
   </header>
 
-  <section id="search-panel" class="search-panel" hidden>
-    <input id="search-input" type="search" placeholder="Buscar publicaciones..." maxlength="100" aria-label="Buscar">
-    <button id="clear-search" class="icon-btn" type="button" aria-label="Limpiar búsqueda">
-      <i class="fa-solid fa-xmark"></i>
+  <!-- Búsqueda -->
+  <section
+    id="search-panel"
+    class="search-panel"
+    aria-label="Buscar publicaciones"
+    hidden
+  >
+    <label for="search-input" class="sr-only">
+      Buscar publicaciones
+    </label>
+
+    <input
+      id="search-input"
+      type="search"
+      placeholder="Buscar publicaciones..."
+      maxlength="100"
+      autocomplete="off"
+    >
+
+    <button
+      id="clear-search"
+      class="icon-btn"
+      type="button"
+      aria-label="Limpiar búsqueda"
+    >
+      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
     </button>
   </section>
 
+  <!-- Feed principal -->
   <main id="feed" aria-label="Publicaciones">
-    <div id="feed-status" role="status">Cargando publicaciones…</div>
+    <div id="feed-status" role="status" aria-live="polite">
+      Cargando publicaciones…
+    </div>
   </main>
 
+  <!-- Botón para crear publicación -->
   <div class="upload-wrapper">
-    <button id="open-upload-btn" class="upload-btn" type="button" aria-label="Crear publicación">
-      <i class="fa-solid fa-plus"></i>
+    <button
+      id="open-upload-btn"
+      class="upload-btn"
+      type="button"
+      aria-label="Crear publicación"
+      aria-controls="preview-modal"
+    >
+      <i class="fa-solid fa-plus" aria-hidden="true"></i>
     </button>
   </div>
 
-  <!-- Crear publicación -->
-  <div id="preview-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="publish-heading" hidden>
+  <!-- Modal de nueva publicación -->
+  <div
+    id="preview-modal"
+    class="modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="publish-heading"
+    hidden
+  >
     <div class="modal-card">
+
+      <!-- Cabecera del compositor -->
       <div class="modal-header">
-        <button id="cancel-btn" class="icon-btn" type="button" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        <button
+          id="cancel-btn"
+          class="icon-btn"
+          type="button"
+          aria-label="Cerrar creación de publicación"
+        >
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+
         <h2 id="publish-heading">Nueva publicación</h2>
-        <button id="publish-btn" class="btn-primary" type="button" disabled>Publicar</button>
+
+        <button
+          id="publish-btn"
+          class="btn-primary"
+          type="button"
+          disabled
+        >
+          Publicar
+        </button>
       </div>
 
-      <section class="media-type-selector" aria-label="Tipo de publicación">
-        <button class="media-type active" type="button" data-type="image" aria-pressed="true"><i class="fa-regular fa-image"></i> Foto</button>
-        <button class="media-type" type="button" data-type="video" aria-pressed="false"><i class="fa-solid fa-video"></i> Video</button>
-        <button class="media-type" type="button" data-type="audio" aria-pressed="false"><i class="fa-solid fa-music"></i> Audio</button>
-        <button class="media-type" type="button" data-type="file" aria-pressed="false"><i class="fa-solid fa-paperclip"></i> Archivo</button>
+      <!-- Tipo de contenido -->
+      <section
+        class="media-type-selector"
+        aria-label="Tipo de publicación"
+      >
+        <button
+          class="media-type active"
+          type="button"
+          data-type="image"
+          aria-pressed="true"
+        >
+          <i class="fa-regular fa-image" aria-hidden="true"></i>
+          <span>Foto</span>
+        </button>
+
+        <button
+          class="media-type"
+          type="button"
+          data-type="video"
+          aria-pressed="false"
+        >
+          <i class="fa-solid fa-video" aria-hidden="true"></i>
+          <span>Video</span>
+        </button>
+
+        <button
+          class="media-type"
+          type="button"
+          data-type="audio"
+          aria-pressed="false"
+        >
+          <i class="fa-solid fa-music" aria-hidden="true"></i>
+          <span>Audio</span>
+        </button>
+
+        <button
+          class="media-type"
+          type="button"
+          data-type="file"
+          aria-pressed="false"
+        >
+          <i class="fa-solid fa-paperclip" aria-hidden="true"></i>
+          <span>Archivo</span>
+        </button>
       </section>
 
-      <div class="camera-actions">
-        <button id="open-camera-btn" class="btn-secondary" type="button"><i class="fa-solid fa-camera"></i> Abrir cámara</button>
-        <button id="switch-camera-btn" class="btn-secondary" type="button" disabled><i class="fa-solid fa-camera-rotate"></i> Girar cámara</button>
-        <button id="capture-btn" class="btn-secondary" type="button" disabled><i class="fa-solid fa-circle"></i> Tomar foto</button>
-        <button id="record-btn" class="btn-secondary" type="button" disabled><i class="fa-solid fa-video"></i> Grabar video</button>
-        <button id="stop-camera-btn" class="btn-secondary" type="button" disabled><i class="fa-solid fa-stop"></i> Cerrar cámara</button>
-      </div>
+      <!-- Cámara -->
+      <section class="camera-section" aria-label="Capturar contenido">
+        <div class="camera-actions">
+          <button
+            id="open-camera-btn"
+            class="btn-secondary"
+            type="button"
+          >
+            <i class="fa-solid fa-camera" aria-hidden="true"></i>
+            Abrir cámara
+          </button>
 
-      <p id="camera-status" class="file-info" role="status" aria-live="polite"></p>
+          <button
+            id="switch-camera-btn"
+            class="btn-secondary"
+            type="button"
+            disabled
+          >
+            <i class="fa-solid fa-camera-rotate" aria-hidden="true"></i>
+            Girar cámara
+          </button>
 
-      <div id="camera-container" class="camera-area" hidden>
-        <video id="camera-video" autoplay muted playsinline></video>
-      </div>
+          <button
+            id="capture-btn"
+            class="btn-secondary"
+            type="button"
+            disabled
+          >
+            <i class="fa-solid fa-circle" aria-hidden="true"></i>
+            Tomar foto
+          </button>
 
-      <label class="file-picker-label" for="file-input">
-        <i class="fa-solid fa-cloud-arrow-up"></i>
-        <span>Elegir archivo</span>
-        <small>O usa la cámara para capturar contenido</small>
-      </label>
-      <input id="file-input" type="file" accept="image/*" hidden>
-      <p id="file-info" class="file-info" aria-live="polite">Ningún archivo seleccionado</p>
+          <button
+            id="record-btn"
+            class="btn-secondary"
+            type="button"
+            disabled
+          >
+            <i class="fa-solid fa-video" aria-hidden="true"></i>
+            Grabar video
+          </button>
 
-      <div id="preview-container" class="preview-area">
-        <div class="preview-placeholder">
-          <i class="fa-regular fa-images"></i>
-          <p>Tu vista previa aparecerá aquí</p>
+          <button
+            id="stop-camera-btn"
+            class="btn-secondary"
+            type="button"
+            disabled
+          >
+            <i class="fa-solid fa-stop" aria-hidden="true"></i>
+            Cerrar cámara
+          </button>
         </div>
-      </div>
 
-      <div class="input-group audio-attachment">
-        <i class="fa-solid fa-music"></i>
-        <label for="audio-input">Audio adicional (opcional)</label>
-        <input id="audio-input" type="file" accept="audio/*">
-      </div>
-      <p id="audio-info" class="file-info" aria-live="polite"></p>
+        <p
+          id="camera-status"
+          class="file-info"
+          role="status"
+          aria-live="polite"
+        >
+          Abre la cámara para tomar una foto o grabar un video.
+        </p>
 
-      <section class="filter-selector" aria-label="Filtros">
-        <button class="filter-tag active" type="button" data-filter="normal" aria-pressed="true">Normal</button>
-        <button class="filter-tag" type="button" data-filter="vintage" aria-pressed="false">Vintage</button>
-        <button class="filter-tag" type="button" data-filter="cyber" aria-pressed="false">Cyber</button>
-        <button class="filter-tag" type="button" data-filter="bw" aria-pressed="false">B&amp;N</button>
+        <div
+          id="camera-container"
+          class="camera-area"
+          hidden
+        >
+          <video
+            id="camera-video"
+            autoplay
+            muted
+            playsinline
+            aria-label="Vista previa de la cámara"
+          ></video>
+        </div>
       </section>
 
-      <div class="input-group">
-        <i class="fa-solid fa-pen"></i>
-        <input id="caption-input" type="text" placeholder="¿Qué quieres compartir?" maxlength="150" autocomplete="off" aria-label="Descripción">
-        <span id="caption-counter">0/150</span>
-      </div>
+      <!-- Selección de archivos -->
+      <section class="file-selection" aria-label="Seleccionar contenido">
+        <label class="file-picker-label" for="file-input">
+          <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
 
-      <div class="input-group">
-        <i class="fa-solid fa-hashtag"></i>
-        <input id="hashtags-input" type="text" placeholder="Etiquetas (opcional)" maxlength="100" aria-label="Etiquetas">
-      </div>
+          <span>Elegir archivo</span>
 
-      <div id="upload-progress-container" hidden>
-        <progress id="upload-progress" max="100" value="0"></progress>
-        <p id="upload-status" role="status" aria-live="polite"></p>
-      </div>
+          <small>
+            Selecciona un archivo de tu dispositivo o utiliza la cámara.
+          </small>
+        </label>
 
-      <p id="publish-error" class="error-message" role="alert"></p>
+        <input
+          id="file-input"
+          type="file"
+          accept="image/*"
+          hidden
+        >
+
+        <p
+          id="file-info"
+          class="file-info"
+          role="status"
+          aria-live="polite"
+        >
+          Ningún archivo seleccionado
+        </p>
+      </section>
+
+      <!-- Vista previa -->
+      <section class="preview-section" aria-label="Vista previa">
+        <div
+          id="preview-container"
+          class="preview-area"
+        >
+          <div class="preview-placeholder">
+            <i class="fa-regular fa-images" aria-hidden="true"></i>
+            <p>Tu vista previa aparecerá aquí</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Audio opcional -->
+      <section class="audio-attachment" aria-label="Audio adicional">
+        <div class="input-group">
+          <i class="fa-solid fa-music" aria-hidden="true"></i>
+
+          <label for="audio-input">Audio adicional (opcional)</label>
+
+          <input
+            id="audio-input"
+            type="file"
+            accept="audio/*"
+          >
+        </div>
+
+        <p
+          id="audio-info"
+          class="file-info"
+          role="status"
+          aria-live="polite"
+        ></p>
+      </section>
+
+      <!-- Filtros -->
+      <section class="filter-section" aria-label="Filtros de imagen y video">
+        <p class="section-label">Filtros</p>
+
+        <div class="filter-selector">
+          <button
+            class="filter-tag active"
+            type="button"
+            data-filter="normal"
+            aria-pressed="true"
+          >
+            Normal
+          </button>
+
+          <button
+            class="filter-tag"
+            type="button"
+            data-filter="vintage"
+            aria-pressed="false"
+          >
+            Vintage
+          </button>
+
+          <button
+            class="filter-tag"
+            type="button"
+            data-filter="cyber"
+            aria-pressed="false"
+          >
+            Cyber
+          </button>
+
+          <button
+            class="filter-tag"
+            type="button"
+            data-filter="bw"
+            aria-pressed="false"
+          >
+            B&amp;N
+          </button>
+        </div>
+      </section>
+
+      <!-- Descripción -->
+      <section class="caption-section" aria-label="Detalles de publicación">
+        <div class="input-group">
+          <i class="fa-solid fa-pen" aria-hidden="true"></i>
+
+          <label class="sr-only" for="caption-input">
+            Descripción de la publicación
+          </label>
+
+          <input
+            id="caption-input"
+            type="text"
+            placeholder="¿Qué quieres compartir?"
+            maxlength="150"
+            autocomplete="off"
+          >
+
+          <span id="caption-counter">0/150</span>
+        </div>
+
+        <!-- Hashtags -->
+        <div class="input-group">
+          <i class="fa-solid fa-hashtag" aria-hidden="true"></i>
+
+          <label class="sr-only" for="hashtags-input">
+            Etiquetas
+          </label>
+
+          <input
+            id="hashtags-input"
+            type="text"
+            placeholder="Etiquetas (opcional)"
+            maxlength="100"
+            autocomplete="off"
+          >
+        </div>
+      </section>
+
+      <!-- Progreso de publicación -->
+      <section
+        id="upload-progress-container"
+        aria-label="Progreso de publicación"
+        hidden
+      >
+        <progress
+          id="upload-progress"
+          max="100"
+          value="0"
+        ></progress>
+
+        <p
+          id="upload-status"
+          role="status"
+          aria-live="polite"
+        ></p>
+      </section>
+
+      <!-- Errores -->
+      <p
+        id="publish-error"
+        class="error-message"
+        role="alert"
+        aria-live="assertive"
+      ></p>
+
     </div>
   </div>
 
-  <!-- Comentarios -->
-  <div id="comments-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="comments-heading" hidden>
+  <!-- Modal de comentarios -->
+  <div
+    id="comments-modal"
+    class="modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="comments-heading"
+    hidden
+  >
     <div class="modal-card comments-card">
       <div class="modal-header">
         <h2 id="comments-heading">Comentarios</h2>
-        <button id="close-comments-btn" class="icon-btn" type="button" aria-label="Cerrar comentarios"><i class="fa-solid fa-xmark"></i></button>
+
+        <button
+          id="close-comments-btn"
+          class="icon-btn"
+          type="button"
+          aria-label="Cerrar comentarios"
+        >
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
       </div>
-      <div id="comments-list" class="comments-list"></div>
+
+      <div
+        id="comments-list"
+        class="comments-list"
+        aria-live="polite"
+      ></div>
+
       <form id="comment-form" class="comment-input-area">
-        <input id="new-comment-input" type="text" maxlength="500" placeholder="Añadir comentario..." required aria-label="Nuevo comentario">
-        <button class="btn-primary" type="submit" aria-label="Enviar comentario"><i class="fa-solid fa-paper-plane"></i></button>
+        <label class="sr-only" for="new-comment-input">
+          Escribe un comentario
+        </label>
+
+        <input
+          id="new-comment-input"
+          type="text"
+          maxlength="500"
+          placeholder="Añadir comentario..."
+          autocomplete="off"
+          required
+        >
+
+        <button
+          class="btn-primary"
+          type="submit"
+          aria-label="Enviar comentario"
+        >
+          <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+        </button>
       </form>
     </div>
   </div>
 
-  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+  <!-- Notificaciones -->
+  <div
+    id="toast-container"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+  ></div>
 </body>
 </html>
